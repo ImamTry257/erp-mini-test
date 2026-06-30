@@ -227,7 +227,7 @@ Headers: `Authorization: Bearer <token>`
 List customers (live only, soft-deleted excluded).
 
 Filters:
-- `q` searches `name` OR `email` OR `phone` (case-insensitive).
+- `search` searches `name` OR `email` OR `phone` (case-insensitive).
 - `startDate` / `endDate` filter by `createdAt`.
 
 Whitelist sortBy: `name`, `email`, `phone`, `createdAt`, `updatedAt`.
@@ -307,7 +307,7 @@ Response 200:
 List invoices (live only).
 
 Filters:
-- `q` searches `invoiceNumber` OR `customer.name`.
+- `search` searches `invoiceNumber` OR `customer.name`.
 - `status` enum filter: `DRAFT | PENDING | PAID | OVERDUE`.
 - `customerId` exact match.
 - `startDate` / `endDate` filter by `dueDate`.
