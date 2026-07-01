@@ -18,4 +18,21 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleDestroy() {
     await this.$disconnect();
   }
+
+  /**
+   * Soft delete — set deletedAt ke waktu sekarang
+   */
+  async softDelete(model: string, id: string) {
+    return (this as any)[model].update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+  }
+
+  /**
+   * Helper — WHERE condition untuk data aktif (deletedAt null)
+   */
+  whereActive(additionalWhere: Record<string, any> = {}) {
+    return { deletedAt: null, ...additionalWhere };
+  }
 }

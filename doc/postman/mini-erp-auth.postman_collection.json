@@ -1,0 +1,269 @@
+{
+  "info": {
+    "name": "Mini ERP - Auth",
+    "description": "Auth module endpoints untuk Mini ERP Invoicing System\n\n## Cara Pakai\n1. Login terlebih dahulu untuk mendapatkan `accessToken`\n2. Klik tombol \"Authorization\" di collection → pilih \"Bearer Token\" → paste token\n3. Semua request dalam collection ini akan otomatis menggunakan token",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Login dan dapatkan JWT token.\n\n**Expected Response:** 200 OK\n\n```json\n{\n  \"success\": true,\n  \"message\": \"Success\",\n  \"data\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIs...\",\n    \"user\": {\n      \"id\": \"uuid\",\n      \"name\": \"Admin\",\n      \"email\": \"admin@example.com\",\n      \"role\": \"ADMIN\"\n    }\n  },\n  \"meta\": null\n}\n```"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.success && jsonData.data.accessToken) {",
+              "    pm.environment.set('accessToken', jsonData.data.accessToken);",
+              "    pm.test('Login berhasil', function() {",
+              "        pm.expect(jsonData.success).to.be.true;",
+              "        pm.expect(jsonData.data.accessToken).to.not.be.empty;",
+              "    });",
+              "} else {",
+              "    pm.test('Login gagal', function() {",
+              "        pm.expect(false).to.be.true;",
+              "    });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Profile (Me)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
+        },
+        "description": "Ambil profile user yang sedang login (berdasarkan JWT token).\n\n**Requires:** Bearer token\n\n**Expected Response:** 200 OK\n\n```json\n{\n  \"success\": true,\n  \"message\": \"Success\",\n  \"data\": {\n    \"id\": \"uuid\",\n    \"name\": \"Admin\",\n    \"email\": \"admin@example.com\",\n    \"role\": \"ADMIN\",\n    \"createdAt\": \"2026-07-01T00:00:00.000Z\"\n  },\n  \"meta\": null\n}\n```"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "pm.test('Status 200', function() {",
+              "    pm.expect(pm.response.code).to.equal(200);",
+              "});",
+              "pm.test('Response memiliki user data', function() {",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "    pm.expect(jsonData.data).to.have.property('id');",
+              "    pm.expect(jsonData.data).to.have.property('email');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login - Invalid Credentials",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"wrong@example.com\",\n  \"password\": \"wrongpassword\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Test login dengan credential yang salah.\n\n**Expected Response:** 401 Unauthorized\n\n```json\n{\n  \"success\": false,\n  \"message\": \"Email atau password salah\",\n  \"errors\": null,\n  \"statusCode\": 401\n}\n```"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', function() {",
+              "    pm.expect(pm.response.code).to.equal(401);",
+              "});",
+              "pm.test('Error message sesuai', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.false;",
+              "    pm.expect(jsonData.message).to.include('Email atau password salah');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login - Invalid Email Format",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"not-an-email\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Test login dengan format email yang salah.\n\n**Expected Response:** 422 Unprocessable Entity\n\n```json\n{\n  \"success\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    { \"field\": \"email\", \"message\": \"email must be an email\" }\n  ],\n  \"statusCode\": 422\n}\n```"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 422', function() {",
+              "    pm.expect(pm.response.code).to.equal(422);",
+              "});",
+              "pm.test('Validation error', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.false;",
+              "    pm.expect(jsonData.errors).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login - Password Too Short",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Test login dengan password yang terlalu pendek (< 6 karakter).\n\n**Expected Response:** 422 Unprocessable Entity\n\n```json\n{\n  \"success\": false,\n  \"message\": \"Validation failed\",\n  \"errors\": [\n    { \"field\": \"password\", \"message\": \"password must be longer than or equal to 6 characters\" }\n  ],\n  \"statusCode\": 422\n}\n```"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 422', function() {",
+              "    pm.expect(pm.response.code).to.equal(422);",
+              "});",
+              "pm.test('Password validation error', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.false;",
+              "    pm.expect(jsonData.errors).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Profile - No Token",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "noauth"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
+        },
+        "description": "Test akses profile tanpa token.\n\n**Expected Response:** 401 Unauthorized\n\n```json\n{\n  \"success\": false,\n  \"message\": \"Token tidak valid atau expired\",\n  \"errors\": null,\n  \"statusCode\": 401\n}\n```"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 401', function() {",
+              "    pm.expect(pm.response.code).to.equal(401);",
+              "});",
+              "pm.test('Unauthorized message', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.false;",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
