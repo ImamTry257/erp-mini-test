@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  OVERDUE
+}
+
+model User {
+  id         String    @id @default(uuid())
+  name       String
+  email      String    @unique
+  password   String
+  role       Role      @default(USER)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  invoices   Invoice[] @relation("InvoiceCreatedBy")
+
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Customer {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  phone     String?
+  address   String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  invoices  Invoice[]
+
+  @@index([deletedAt])
+  @@index([name])
+  @@map("customers")
+}
+
+model Invoice {
+  id              String        @id @default(uuid())
+  invoiceNumber   String        @unique @map("invoice_number")
+  status          InvoiceStatus @default(DRAFT)
+  dueDate         DateTime      @map("due_date")
+  paidDate        DateTime?     @map("paid_date")
+  subtotalAmount  Int           @default(0) @map("subtotal_amount")
+  taxAmount       Int           @default(0) @map("tax_amount")
+  discountAmount  Int           @default(0) @map("discount_amount")
+  totalAmount     Int           @default(0) @map("total_amount")
+  notes           String?
+  customerId      String        @map("customer_id")
+  createdById     String        @map("created_by_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  deletedAt       DateTime?     @map("deleted_at")
+
+  customer        Customer      @relation(fields: [customerId], references: [id])
+  createdBy       User          @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+  items           InvoiceItem[]
+
+  @@index([deletedAt])
+  @@index([status])
+  @@index([customerId])
+  @@index([createdById])
+  @@index([dueDate])
+  @@index([createdAt])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id             String    @id @default(uuid())
+  invoiceId      String    @map("invoice_id")
+  itemName       String    @map("item_name")
+  description    String?
+  quantityAmount Int       @map("quantity_amount")
+  unitPrice      Int       @map("unit_price")
+  lineTotal      Int       @map("line_total")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  invoice        Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([deletedAt])
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
