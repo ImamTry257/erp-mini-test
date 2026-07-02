@@ -1,22 +1,9 @@
+import { cookies } from "next/headers";
+import { ApiError } from "./api";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-export class ApiError extends Error {
-  statusCode: number;
-  errors?: { field: string; message: string }[];
-
-  constructor(
-    statusCode: number,
-    message: string,
-    errors?: { field: string; message: string }[]
-  ) {
-    super(message);
-    this.name = "ApiError";
-    this.statusCode = statusCode;
-    this.errors = errors;
-  }
-}
-
-export async function api<T>(
+export async function apiServer<T>(
   path: string,
   options: RequestInit & { params?: Record<string, unknown> } = {}
 ): Promise<T> {
@@ -34,17 +21,23 @@ export async function api<T>(
     if (qs) url += `?${qs}`;
   }
 
+  // Read auth token from cookie (server-side)
+  const cookieStore = await cookies();
+  const authToken = cookieStore.get("auth_token")?.value;
+
   const headers: Record<string, string> = {
     ...((fetchOptions.headers as Record<string, string>) || {}),
   };
 
-  // Only set Content-Type if there's a body and it's not FormData
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+
   if (fetchOptions.body && !(fetchOptions.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
 
   const res = await fetch(url, {
-    credentials: "include",
     ...fetchOptions,
     headers,
   });
@@ -52,15 +45,8 @@ export async function api<T>(
   const json = await res.json();
 
   if (!res.ok || json.success === false) {
-    const statusCode = json.statusCode ?? res.status;
-
-    // Auto-redirect to login on 401 (client-side only)
-    if (statusCode === 401 && typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
-
     throw new ApiError(
-      statusCode,
+      json.statusCode ?? res.status,
       json.string ?? json.message ?? "Request failed",
       json.errors
     );
